@@ -36,7 +36,7 @@
             color: var(--text-main);
         }
 
-        /* --- LOADING SCREEN (same as previous great version) --- */
+        /* ========= NEW FLUID LOADING SCREEN ========= */
         #loader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -50,69 +50,68 @@
             overflow: hidden;
         }
 
-        .loader-glow {
+        /* Fluid background – animated blobs */
+        .fluid-bg {
             position: absolute;
             width: 100%;
             height: 100%;
-            background: radial-gradient(ellipse at 70% 30%, rgba(100, 255, 218, 0.15) 0%, transparent 70%);
-            animation: breatheGlow 10s infinite alternate;
-            pointer-events: none;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            overflow: hidden;
+            filter: blur(40px);
         }
 
-        @keyframes breatheGlow {
-            0% { opacity: 0.2; transform: scale(1); }
-            100% { opacity: 0.7; transform: scale(1.3); }
+        .blob {
+            position: absolute;
+            background: rgba(0, 180, 216, 0.3);
+            border-radius: 50%;
+            filter: blur(30px);
+            animation: fluidMove 20s infinite alternate ease-in-out;
         }
 
-        .reef-container {
-            width: 100%;
-            max-width: 1000px;
-            margin-bottom: 30px;
-            position: relative;
-            z-index: 5;
-            filter: drop-shadow(0 0 20px rgba(0, 180, 216, 0.3));
+        .blob1 {
+            width: 60vmax;
+            height: 60vmax;
+            top: -20vh;
+            left: -20vw;
+            background: radial-gradient(circle, #64ffda80, #0077b680);
+            animation: fluidMove 25s infinite alternate;
         }
 
-        .reef-svg {
-            display: block;
-            width: 100%;
-            height: auto;
+        .blob2 {
+            width: 50vmax;
+            height: 50vmax;
+            bottom: -30vh;
+            right: -10vw;
+            background: radial-gradient(circle, #00b4d880, #0a192f80);
+            animation: fluidMove 20s infinite alternate-reverse;
         }
 
-        .swim-slow { animation: swimRight 26s linear infinite; }
-        .swim-med { animation: swimLeft 19s linear infinite; }
-        .swim-fast { animation: swimRight 13s linear infinite; }
-        .hover-fish { animation: floatVertical 8s ease-in-out infinite; }
-        .bubble-float { animation: bubbleUp 7s ease-in infinite; }
-        .rotate-slow { animation: rotate 20s linear infinite; transform-box: fill-box; transform-origin: center; }
-        .pulse-ring { animation: sonarPulse 3s ease-out infinite; transform-box: fill-box; transform-origin: center; }
-
-        @keyframes swimRight {
-            0% { transform: translateX(-280px); }
-            100% { transform: translateX(1300px); }
-        }
-        @keyframes swimLeft {
-            0% { transform: translateX(1300px) scaleX(-1); }
-            100% { transform: translateX(-280px) scaleX(-1); }
-        }
-        @keyframes floatVertical {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-        @keyframes bubbleUp {
-            0% { transform: translateY(0) scale(0.7); opacity: 0.3; }
-            50% { opacity: 0.8; }
-            100% { transform: translateY(-300px) scale(1.3); opacity: 0; }
-        }
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        @keyframes sonarPulse {
-            0% { r: 30; opacity: 0.8; }
-            100% { r: 90; opacity: 0; }
+        .blob3 {
+            width: 40vmax;
+            height: 40vmax;
+            top: 10vh;
+            right: 20vw;
+            background: radial-gradient(circle, #64ffda60, #11224080);
+            animation: fluidMove 18s infinite alternate;
         }
 
+        .blob4 {
+            width: 70vmax;
+            height: 70vmax;
+            bottom: -10vh;
+            left: -10vw;
+            background: radial-gradient(circle, #0077b660, #01081280);
+            animation: fluidMove 30s infinite alternate-reverse;
+        }
+
+        @keyframes fluidMove {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(10%, 10%) scale(1.2); }
+        }
+
+        /* Loading text and progress (above blobs) */
         .loading-text {
             font-size: 1.8rem;
             font-weight: 300;
@@ -123,6 +122,7 @@
             margin-bottom: 18px;
             z-index: 10;
             animation: textPulse 2.4s infinite alternate;
+            position: relative;
         }
 
         @keyframes textPulse {
@@ -163,9 +163,11 @@
             letter-spacing: 2.5px;
             margin-top: 8px;
             font-family: 'Courier New', monospace;
+            z-index: 10;
+            position: relative;
         }
 
-        /* --- Chat container with simple API key area --- */
+        /* --- Chat container (unchanged) --- */
         .chat-container {
             width: 100%;
             max-width: 650px;
@@ -261,7 +263,6 @@
             color: var(--abyss);
         }
 
-        /* Chat window */
         .chat-window {
             flex-grow: 1;
             padding: 24px;
@@ -295,10 +296,10 @@
             background: #020c1b;
             padding: 12px;
             border-radius: 8px;
-            overflow-x: auto;  /* Horizontal scroll for long lines */
+            overflow-x: auto;
             margin: 8px 0;
             max-width: 100%;
-            white-space: pre;   /* Keep whitespace, allow scroll */
+            white-space: pre;
         }
 
         .message-content pre code {
@@ -306,7 +307,7 @@
             padding: 0;
             color: #ffb86c;
             font-family: 'Courier New', monospace;
-            white-space: pre;   /* Ensure code doesn't wrap */
+            white-space: pre;
         }
 
         .message-content p { margin-bottom: 8px; }
@@ -338,7 +339,6 @@
             border: 1px solid rgba(136, 146, 176, 0.2);
         }
 
-        /* Action buttons for AI messages */
         .message-actions {
             display: flex;
             gap: 8px;
@@ -431,7 +431,22 @@
     </style>
 </head>
 <body>
-  <!-- ========= CHAT INTERFACE ========= -->
+    <!-- ========= NEW FLUID LOADING SCREEN ========= -->
+    <div id="loader">
+        <div class="fluid-bg">
+            <div class="blob blob1"></div>
+            <div class="blob blob2"></div>
+            <div class="blob blob3"></div>
+            <div class="blob blob4"></div>
+        </div>
+        <div class="loading-text">NAUTILUS ASCENDING</div>
+        <div class="progress-bar-container">
+            <div class="progress-fill"></div>
+        </div>
+        <div class="depth-marker">▼ 300 fathoms • fluid depths ▼</div>
+    </div>
+
+    <!-- ========= CHAT INTERFACE ========= -->
     <div class="chat-container" id="chatContainer">
         <header class="chat-header">
             <div class="header-main">
@@ -540,7 +555,6 @@
                     loader.style.display = 'none'; 
                     chatContainer.style.display = 'flex';
                     typeHTML(greetingNode, "Systems online. Paste your Groq API key above, then ask me anything.", 15, () => {
-                        // Add action buttons to greeting message (parent of greetingNode)
                         const parentMsg = greetingNode.closest('.message');
                         if (parentMsg) addActionButtons(parentMsg);
                     });
@@ -641,11 +655,10 @@
                 
                 if (useTypewriter) {
                     typeHTML(contentDiv, content, 10, () => {
-                        // After typing, add action buttons (only for AI messages)
                         if (sender === 'ai') addActionButtons(msgDiv);
                     });
                 } else {
-                    contentDiv.innerHTML = content; // For user messages, content is plain text
+                    contentDiv.innerHTML = content;
                     if (sender === 'ai') addActionButtons(msgDiv);
                 }
                 scrollToBottom();
@@ -673,7 +686,6 @@
                 chatWindow.scrollTop = chatWindow.scrollHeight;
             }
 
-            // Enhanced typewriter with callback
             function typeHTML(element, html, speed, callback) {
                 const tokens = html.split(/(<[^>]+>)/);
                 element.innerHTML = '';
@@ -710,22 +722,19 @@
                 typeNext();
             }
 
-            // --- Action buttons: Copy code and Try again ---
+            // Action buttons
             function addActionButtons(messageDiv) {
-                // Avoid adding multiple times
                 if (messageDiv.querySelector('.message-actions')) return;
 
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'message-actions';
 
-                // Copy button (only if there is code)
                 const codeBlocks = messageDiv.querySelectorAll('pre code');
                 if (codeBlocks.length > 0) {
                     const copyBtn = document.createElement('button');
                     copyBtn.className = 'action-btn';
                     copyBtn.innerHTML = '📋 Copy code';
                     copyBtn.addEventListener('click', () => {
-                        // Combine all code from all code blocks
                         const codeText = Array.from(codeBlocks).map(block => block.textContent).join('\n\n---\n\n');
                         navigator.clipboard.writeText(codeText).then(() => {
                             copyBtn.innerHTML = '✓ Copied!';
@@ -737,16 +746,14 @@
                     actionsDiv.appendChild(copyBtn);
                 }
 
-                // Try again button
                 const tryAgainBtn = document.createElement('button');
                 tryAgainBtn.className = 'action-btn';
                 tryAgainBtn.innerHTML = '🔄 Try again';
                 tryAgainBtn.addEventListener('click', () => {
                     const feedback = prompt('What was wrong or needs fixing? (Your response will be sent as a message)');
                     if (feedback && feedback.trim() !== '') {
-                        // Send as user message
                         userInput.value = feedback.trim();
-                        sendMessage(); // This will send the message
+                        sendMessage();
                     }
                 });
                 actionsDiv.appendChild(tryAgainBtn);
