@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nautilus AI · Groq深海</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        /* --- Ocean Color Palette (unchanged) --- */
+        :root {
+            --abyss: #010812;
+            --deep-sea: #0a192f;
+            --ocean-current: #112240;
+            --bioluminescent-teal: #64ffda;
+            --reef-blue: #0077b6;
+            --surface-cyan: #00b4d8;
+            --text-main: #e6f1ff;
+            --text-muted: #8892b0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--abyss);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        /* --- LOADING SCREEN (same as previous great version) --- */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 30% 40%, #0b2a3e, #010812 90%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+            overflow: hidden;
+        }
+
+        .loader-glow {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at 70% 30%, rgba(100, 255, 218, 0.15) 0%, transparent 70%);
+            animation: breatheGlow 10s infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes breatheGlow {
+            0% { opacity: 0.2; transform: scale(1); }
+            100% { opacity: 0.7; transform: scale(1.3); }
+        }
+
+        .reef-container {
+            width: 100%;
+            max-width: 1000px;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 5;
+            filter: drop-shadow(0 0 20px rgba(0, 180, 216, 0.3));
+        }
+
+        .reef-svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .swim-slow { animation: swimRight 26s linear infinite; }
+        .swim-med { animation: swimLeft 19s linear infinite; }
+        .swim-fast { animation: swimRight 13s linear infinite; }
+        .hover-fish { animation: floatVertical 8s ease-in-out infinite; }
+        .bubble-float { animation: bubbleUp 7s ease-in infinite; }
+        .rotate-slow { animation: rotate 20s linear infinite; transform-box: fill-box; transform-origin: center; }
+        .pulse-ring { animation: sonarPulse 3s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+
+        @keyframes swimRight {
+            0% { transform: translateX(-280px); }
+            100% { transform: translateX(1300px); }
+        }
+        @keyframes swimLeft {
+            0% { transform: translateX(1300px) scaleX(-1); }
+            100% { transform: translateX(-280px) scaleX(-1); }
+        }
+        @keyframes floatVertical {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes bubbleUp {
+            0% { transform: translateY(0) scale(0.7); opacity: 0.3; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-300px) scale(1.3); opacity: 0; }
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes sonarPulse {
+            0% { r: 30; opacity: 0.8; }
+            100% { r: 90; opacity: 0; }
+        }
+
+        .loading-text {
+            font-size: 1.8rem;
+            font-weight: 300;
+            color: #ffffff;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            text-shadow: 0 0 15px #64ffda, 0 0 35px #00b4d8;
+            margin-bottom: 18px;
+            z-index: 10;
+            animation: textPulse 2.4s infinite alternate;
+        }
+
+        @keyframes textPulse {
+            0% { opacity: 0.6; text-shadow: 0 0 8px #00b4d8, 0 0 20px #0077b6; }
+            100% { opacity: 1; text-shadow: 0 0 20px #64ffda, 0 0 45px #00b4d8; }
+        }
+
+        .progress-bar-container {
+            width: 300px;
+            height: 4px;
+            background: rgba(10, 25, 47, 0.6);
+            border-radius: 30px;
+            box-shadow: inset 0 1px 6px #000000, 0 0 10px #64ffda33;
+            margin-top: 15px;
+            position: relative;
+            z-index: 10;
+            backdrop-filter: blur(2px);
+            border: 1px solid rgba(100, 255, 218, 0.25);
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #64ffda, #00b4d8, #0077b6);
+            border-radius: 30px;
+            box-shadow: 0 0 20px #64ffda;
+            animation: loadProgress 5s linear forwards;
+        }
+
+        @keyframes loadProgress {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        .depth-marker {
+            font-size: 0.75rem;
+            color: #7f9fbb;
+            letter-spacing: 2.5px;
+            margin-top: 8px;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* --- Chat container with simple API key area --- */
+        .chat-container {
+            width: 100%;
+            max-width: 650px;
+            height: 85vh;
+            max-height: 850px;
+            background-color: var(--deep-sea);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 20px rgba(100, 255, 218, 0.05);
+            display: none; 
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid var(--ocean-current);
+            opacity: 0;
+            animation: fadeInChat 1s forwards;
+        }
+
+        .chat-header {
+            background-color: var(--ocean-current);
+            padding: 14px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-bottom: 1px solid rgba(100, 255, 218, 0.1);
+            z-index: 10;
+        }
+
+        .header-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nautilus-logo {
+            width: 32px; height: 32px;
+            color: var(--bioluminescent-teal); 
+            filter: drop-shadow(0 0 5px rgba(100, 255, 218, 0.4));
+        }
+
+        .chat-header h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-main);
+            letter-spacing: 0.5px;
+        }
+
+        /* Simple API key row */
+        .api-key-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: rgba(1, 8, 18, 0.6);
+            padding: 8px 12px;
+            border-radius: 30px;
+            border: 1px solid var(--reef-blue);
+        }
+
+        .api-key-row input {
+            background: var(--abyss);
+            border: 1px solid var(--ocean-current);
+            border-radius: 30px;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            outline: none;
+            flex: 1;
+            font-family: monospace;
+        }
+
+        .api-key-row input:focus {
+            border-color: var(--bioluminescent-teal);
+        }
+
+        .api-key-row input::placeholder {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .api-key-row button {
+            background: transparent;
+            border: 1px solid var(--bioluminescent-teal);
+            color: var(--bioluminescent-teal);
+            border-radius: 30px;
+            padding: 8px 18px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .api-key-row button:hover {
+            background: var(--bioluminescent-teal);
+            color: var(--abyss);
+        }
+
+        /* Chat window */
+        .chat-window {
+            flex-grow: 1;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .chat-window::-webkit-scrollbar { width: 6px; }
+        .chat-window::-webkit-scrollbar-track { background: var(--deep-sea); }
+        .chat-window::-webkit-scrollbar-thumb { background: var(--ocean-current); border-radius: 10px; }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 85%;
+            animation: slideUp 0.3s ease-out forwards;
+        }
+
+        .message-content {
+            padding: 14px 18px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        /* Code block styling with horizontal scroll */
+        .message-content pre {
+            background: #020c1b;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;  /* Horizontal scroll for long lines */
+            margin: 8px 0;
+            max-width: 100%;
+            white-space: pre;   /* Keep whitespace, allow scroll */
+        }
+
+        .message-content pre code {
+            background: none;
+            padding: 0;
+            color: #ffb86c;
+            font-family: 'Courier New', monospace;
+            white-space: pre;   /* Ensure code doesn't wrap */
+        }
+
+        .message-content p { margin-bottom: 8px; }
+        .message-content p:last-child { margin-bottom: 0; }
+        .message-content strong { color: var(--bioluminescent-teal); }
+        .message-content code { 
+            background: #020c1b; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            color: #ffb86c;
+            white-space: pre-wrap;
+        }
+        .message-content ul, .message-content ol { margin-left: 20px; margin-bottom: 8px; }
+
+        .user-message { align-self: flex-end; }
+        .user-message .message-content {
+            background: linear-gradient(135deg, var(--reef-blue), #005f94);
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+            box-shadow: 0 4px 15px rgba(0, 119, 182, 0.2);
+        }
+
+        .ai-message { align-self: flex-start; }
+        .ai-message .message-content {
+            background-color: var(--ocean-current);
+            color: var(--text-main);
+            border-radius: 18px 18px 18px 4px;
+            border: 1px solid rgba(136, 146, 176, 0.2);
+        }
+
+        /* Action buttons for AI messages */
+        .message-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            margin-left: 8px;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--bioluminescent-teal);
+            color: var(--bioluminescent-teal);
+            border-radius: 30px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .action-btn:hover {
+            background: var(--bioluminescent-teal);
+            color: var(--abyss);
+        }
+
+        .loading-bubble { display: flex; align-items: center; gap: 5px; height: 24px; }
+        .dot {
+            width: 8px; height: 8px;
+            background-color: var(--bioluminescent-teal);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        .chat-input-area {
+            padding: 20px;
+            background-color: var(--abyss);
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            border-top: 1px solid var(--ocean-current);
+        }
+
+        .chat-input-area textarea {
+            flex-grow: 1;
+            padding: 14px 20px;
+            background-color: var(--ocean-current);
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            border-radius: 24px;
+            font-size: 1rem;
+            color: var(--text-main);
+            outline: none;
+            resize: none;
+            min-height: 50px;
+            max-height: 150px;
+            overflow-y: auto;
+            line-height: 1.4;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .chat-input-area textarea:focus {
+            border-color: var(--bioluminescent-teal);
+            box-shadow: 0 0 10px rgba(100, 255, 218, 0.1);
+        }
+
+        .chat-input-area textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .send-btn {
+            background-color: var(--bioluminescent-teal);
+            color: var(--abyss);
+            border: none;
+            border-radius: 50%;
+            width: 50px; height: 50px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover { transform: scale(1.05); background-color: #52e0c4; }
+        .send-btn svg { width: 22px; height: 22px; stroke-width: 2.5; }
+
+        @keyframes fadeInChat { to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+  <!-- ========= CHAT INTERFACE ========= -->
+    <div class="chat-container" id="chatContainer">
+        <header class="chat-header">
+            <div class="header-main">
+                <svg class="nautilus-logo" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 8.5C5 8.22386 5.22386 8 5.5 8C5.77614 8 6 8.22386 6 8.5C6 8.77614 5.77614 9 5.5 9C5.22386 9 5 8.77614 5 8.5Z" fill="currentColor"/>
+                    <path d="M9 8.5C9 8.22386 9.22386 8 9.5 8C9.77614 8 10 8.22386 10 8.5C10 8.77614 9.77614 9 9.5 9C9.22386 9 9 8.77614 9 8.5Z" fill="currentColor"/>
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M8 2.02242C10.8033 2.27504 13 4.63098 13 7.5V13.5C13 14.3284 12.3284 15 11.5 15H3.5C2.67157 15 2 14.3284 2 13.5V7.5C2 4.63098 4.19675 2.27504 7 2.02242V0H8V2.02242ZM5.5 7C4.67157 7 4 7.67157 4 8.5C4 9.32843 4.67157 10 5.5 10C6.32843 10 7 9.32843 7 8.5C7 7.67157 6.32843 7 5.5 7ZM9.5 7C8.67157 7 8 7.67157 8 8.5C8 9.32843 8.67157 10 9.5 10C10.3284 10 11 9.32843 11 8.5C11 7.67157 10.3284 7 9.5 7ZM11 12H4V11H11V12Z" fill="currentColor"/>
+                    <path d="M0 8V12H1V8H0Z" fill="currentColor"/>
+                    <path d="M15 8H14V12H15V8Z" fill="currentColor"/>
+                </svg>
+                <h1>Nautilus · Groq (gpt-oss-120b)</h1>
+            </div>
+
+            <!-- Simple API key row -->
+            <div class="api-key-row">
+                <input type="password" id="apiKeyInput" placeholder="Paste your Groq API key here">
+                <button id="saveApiKeyBtn">Use Key</button>
+            </div>
+        </header>
+
+        <div class="chat-window" id="chatWindow">
+            <div class="message ai-message">
+                <div class="message-content" id="greeting"></div>
+            </div>
+        </div>
+
+        <div class="chat-input-area">
+            <textarea id="userInput" rows="1" placeholder="Message Nautilus... (Shift+Enter for new line)" autocomplete="off"></textarea>
+            <button class="send-btn" id="sendBtn" aria-label="Send Message">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="19" x2="12" y2="5"></line>
+                    <polyline points="5 12 12 5 19 12"></polyline>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loader = document.getElementById('loader');
+            const chatContainer = document.getElementById('chatContainer');
+            const chatWindow = document.getElementById('chatWindow');
+            const userInput = document.getElementById('userInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const greetingNode = document.getElementById('greeting');
+
+            // Simple API key elements
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+
+            // Store API key
+            let groqApiKey = '';
+
+            // Fixed model
+            const model = 'openai/gpt-oss-120b';
+
+            saveApiKeyBtn.addEventListener('click', () => {
+                groqApiKey = apiKeyInput.value.trim();
+                if (groqApiKey) {
+                    const originalText = saveApiKeyBtn.textContent;
+                    saveApiKeyBtn.textContent = '✓ Key Saved';
+                    setTimeout(() => { saveApiKeyBtn.textContent = 'Use Key'; }, 2000);
+                } else {
+                    alert('Please paste your Groq API key');
+                }
+            });
+
+            // Conversation history
+            const conversationHistory = [
+                { role: 'system', content: 'You are Nautilus, a helpful AI assistant with a deep-sea theme. Respond concisely and accurately.' }
+            ];
+
+            // Audio context
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            
+            function playSound(type) {
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if(type === 'send') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(300, now);
+                    osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } else if (type === 'receive') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(900, now);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+                    osc.start(now);
+                    osc.stop(now + 0.8);
+                }
+            }
+
+            // 5-second loading
+            setTimeout(() => {
+                loader.style.opacity = '0'; 
+                setTimeout(() => {
+                    loader.style.display = 'none'; 
+                    chatContainer.style.display = 'flex';
+                    typeHTML(greetingNode, "Systems online. Paste your Groq API key above, then ask me anything.", 15, () => {
+                        // Add action buttons to greeting message (parent of greetingNode)
+                        const parentMsg = greetingNode.closest('.message');
+                        if (parentMsg) addActionButtons(parentMsg);
+                    });
+                }, 1000); 
+            }, 5000);
+
+            // Auto-resize textarea
+            userInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+                if(this.value === '') this.style.height = '50px'; 
+            });
+
+            userInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // --- Groq API call ---
+            async function fetchGroqResponse(userMessage) {
+                if (!groqApiKey) {
+                    throw new Error('Please set your Groq API key first.');
+                }
+
+                const messagesForApi = [...conversationHistory, { role: 'user', content: userMessage }];
+
+                const requestBody = {
+                    model: model,
+                    messages: messagesForApi,
+                    temperature: 1,
+                    max_tokens: 2048,
+                    top_p: 1,
+                    stream: false,
+                    stop: null
+                };
+
+                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${groqApiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`Groq API error: ${errorData.error?.message || response.statusText}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0].message.content;
+            }
+
+            // Send message
+            const sendMessage = async () => {
+                const text = userInput.value.trim();
+                if (!text) return;
+
+                playSound('send');
+                appendMessage('user', text, false);
+                conversationHistory.push({ role: 'user', content: text });
+
+                userInput.value = '';
+                userInput.style.height = '50px';
+
+                const loadingId = appendLoading();
+                scrollToBottom();
+
+                try {
+                    const aiResponse = await fetchGroqResponse(text);
+                    removeLoading(loadingId);
+                    playSound('receive');
+
+                    conversationHistory.push({ role: 'assistant', content: aiResponse });
+
+                    const htmlResponse = marked.parse(aiResponse);
+                    appendMessage('ai', htmlResponse, true);
+                } catch (error) {
+                    removeLoading(loadingId);
+                    playSound('receive');
+                    const errorMsg = `**Error:** ${error.message}`;
+                    appendMessage('ai', marked.parse(errorMsg), true);
+                }
+            };
+
+            sendBtn.addEventListener('click', sendMessage);
+
+            function appendMessage(sender, content, useTypewriter) {
+                const msgDiv = document.createElement('div');
+                msgDiv.classList.add('message', `${sender}-message`);
+                const contentDiv = document.createElement('div');
+                contentDiv.classList.add('message-content');
+                msgDiv.appendChild(contentDiv);
+                chatWindow.appendChild(msgDiv);
+                
+                if (useTypewriter) {
+                    typeHTML(contentDiv, content, 10, () => {
+                        // After typing, add action buttons (only for AI messages)
+                        if (sender === 'ai') addActionButtons(msgDiv);
+                    });
+                } else {
+                    contentDiv.innerHTML = content; // For user messages, content is plain text
+                    if (sender === 'ai') addActionButtons(msgDiv);
+                }
+                scrollToBottom();
+            }
+
+            function appendLoading() {
+                const id = 'loading-' + Date.now();
+                const msgDiv = document.createElement('div');
+                msgDiv.id = id;
+                msgDiv.classList.add('message', 'ai-message');
+                msgDiv.innerHTML = `
+                    <div class="message-content loading-bubble">
+                        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                    </div>`;
+                chatWindow.appendChild(msgDiv);
+                return id;
+            }
+
+            function removeLoading(id) {
+                const el = document.getElementById(id);
+                if (el) el.remove();
+            }
+
+            function scrollToBottom() {
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+
+            // Enhanced typewriter with callback
+            function typeHTML(element, html, speed, callback) {
+                const tokens = html.split(/(<[^>]+>)/);
+                element.innerHTML = '';
+                let currentStr = '';
+                let tokenIdx = 0;
+                let charIdx = 0;
+
+                function typeNext() {
+                    if (tokenIdx >= tokens.length) {
+                        if (callback) callback();
+                        return;
+                    }
+                    
+                    const token = tokens[tokenIdx];
+                    if (token.startsWith('<')) {
+                        currentStr += token;
+                        element.innerHTML = currentStr;
+                        tokenIdx++;
+                        typeNext();
+                    } else {
+                        if (charIdx < token.length) {
+                            currentStr += token.charAt(charIdx);
+                            element.innerHTML = currentStr;
+                            charIdx++;
+                            scrollToBottom();
+                            setTimeout(typeNext, speed);
+                        } else {
+                            charIdx = 0;
+                            tokenIdx++;
+                            typeNext();
+                        }
+                    }
+                }
+                typeNext();
+            }
+
+            // --- Action buttons: Copy code and Try again ---
+            function addActionButtons(messageDiv) {
+                // Avoid adding multiple times
+                if (messageDiv.querySelector('.message-actions')) return;
+
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'message-actions';
+
+                // Copy button (only if there is code)
+                const codeBlocks = messageDiv.querySelectorAll('pre code');
+                if (codeBlocks.length > 0) {
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'action-btn';
+                    copyBtn.innerHTML = '📋 Copy code';
+                    copyBtn.addEventListener('click', () => {
+                        // Combine all code from all code blocks
+                        const codeText = Array.from(codeBlocks).map(block => block.textContent).join('\n\n---\n\n');
+                        navigator.clipboard.writeText(codeText).then(() => {
+                            copyBtn.innerHTML = '✓ Copied!';
+                            setTimeout(() => { copyBtn.innerHTML = '📋 Copy code'; }, 2000);
+                        }).catch(() => {
+                            alert('Failed to copy code.');
+                        });
+                    });
+                    actionsDiv.appendChild(copyBtn);
+                }
+
+                // Try again button
+                const tryAgainBtn = document.createElement('button');
+                tryAgainBtn.className = 'action-btn';
+                tryAgainBtn.innerHTML = '🔄 Try again';
+                tryAgainBtn.addEventListener('click', () => {
+                    const feedback = prompt('What was wrong or needs fixing? (Your response will be sent as a message)');
+                    if (feedback && feedback.trim() !== '') {
+                        // Send as user message
+                        userInput.value = feedback.trim();
+                        sendMessage(); // This will send the message
+                    }
+                });
+                actionsDiv.appendChild(tryAgainBtn);
+
+                messageDiv.appendChild(actionsDiv);
+            }
+        });
+    </script>
+</body>
+</html>
